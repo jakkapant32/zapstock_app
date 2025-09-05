@@ -37,8 +37,8 @@ jobs:
         
     - name: Download APK from EAS
       run: |
-        # Get the latest build URL
-        BUILD_URL=$(eas build:list --platform=android --limit=1 --json | jq -r '.[0].artifacts.buildUrl')
+        # Get the latest build URL using a different approach
+        BUILD_URL=$(eas build:list --platform=android --limit=1 --json | grep -o '"buildUrl":"[^"]*"' | cut -d'"' -f4)
         echo "Build URL: $BUILD_URL"
         
         # Download the APK
