@@ -40,6 +40,6 @@ jobs:
       with:
         name: android-apk
         path: |
-          *.apk
-          build/
+          **/*.apk
+          **/build/
         retention-days: 30
