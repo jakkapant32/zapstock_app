@@ -35,13 +35,18 @@ jobs:
       env:
         EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         
-    - name: List files after build
-      run: find . -name "*.apk" -type f
-      
+    - name: Download APK from EAS
+      run: |
+        # Get the latest build URL
+        BUILD_URL=$(eas build:list --platform=android --limit=1 --json | jq -r '.[0].artifacts.buildUrl')
+        echo "Build URL: $BUILD_URL"
+        
+        # Download the APK
+        wget -O app.apk "$BUILD_URL"
+        
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
         name: android-apk
-        path: |
-          **/*.apk
+        path: app.apk
         retention-days: 30
