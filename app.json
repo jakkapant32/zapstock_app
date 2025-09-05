@@ -32,6 +32,12 @@
     "plugins": [
       "expo-router"
     ],
-    "scheme": "zapstock"
+    "scheme": "zapstock",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "89005133-578b-4ff1-bdb4-bce68705b2c5"
+      }
+    }
   }
 }
