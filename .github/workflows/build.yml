@@ -35,11 +35,13 @@ jobs:
       env:
         EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         
+    - name: List files after build
+      run: find . -name "*.apk" -type f
+      
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
         name: android-apk
         path: |
           **/*.apk
-          **/build/
         retention-days: 30
