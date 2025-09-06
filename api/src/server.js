@@ -11,6 +11,9 @@ app.use(cors(config.cors));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Connect to database
+db.connectDB().catch(console.error);
+
 // Root route
 app.get('/', (req, res) => {
   res.json({
