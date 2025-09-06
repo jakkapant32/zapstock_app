@@ -102,7 +102,10 @@ app.use((req, res, next) => {
 // Serve static uploads folder
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
-// API Routes
+// Fallback routes for when database is unavailable (placed first)
+app.use('/api', fallbackRoutes);
+
+// API Routes (these will override fallback if they work)
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/transactions', transactionRoutes);
@@ -112,9 +115,6 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/fresh-products', freshProductRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/upload', require('./routes/uploads'));
-
-// Fallback routes for when database is unavailable
-app.use('/api', fallbackRoutes);
 
 // Upload routes
 const uploadRoutes = require('./routes/uploads');
@@ -131,6 +131,16 @@ app.use((req, res, next) => {
 
 app.get('/', (req, res) => {
   res.send('ZapStock Backend API is running!');
+});
+
+// Test endpoint to check if fallback is working
+app.get('/api/test-fallback', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Fallback routes are working!',
+    timestamp: new Date().toISOString(),
+    database: 'fallback mode'
+  });
 });
 
 // Test endpoint สำหรับทดสอบการเชื่อมต่อ
