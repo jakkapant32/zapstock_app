@@ -37,8 +37,8 @@ jobs:
         
     - name: Download APK from EAS
       run: |
-        # ใช้ URL โดยตรง
-        BUILD_URL="https://expo.dev/accounts/jakkapantum/projects/zapstock/builds/bf5f00f9-fe96-4c0c-b471-016cdeace8f8"
+        # ใช้ Direct Download URL
+        BUILD_URL="https://expo.dev/artifacts/eas/bf5f00f9-fe96-4c0c-b471-016cdeace8f8.apk"
         echo "Build URL: $BUILD_URL"
         
         # Download the APK
