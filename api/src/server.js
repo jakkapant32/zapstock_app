@@ -14,6 +14,7 @@ const profileRoutes = require('./routes/profile');
 const dashboardRoutes = require('./routes/dashboard');
 const freshProductRoutes = require('./routes/fresh-products');
 const supplierRoutes = require('./routes/suppliers');
+const fallbackRoutes = require('./routes/fallback');
 
 const app = express();
 const PORT = config.port;
@@ -111,6 +112,9 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/fresh-products', freshProductRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/upload', require('./routes/uploads'));
+
+// Fallback routes for when database is unavailable
+app.use('/api', fallbackRoutes);
 
 // Upload routes
 const uploadRoutes = require('./routes/uploads');
