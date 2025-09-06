@@ -21,15 +21,23 @@ pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
 });
 
-const connectDB = async () => {
-  try {
-    const client = await pool.connect();
-    console.log('Database connected successfully');
-    client.release();
-    return true;
-  } catch (error) {
-    console.error('Database connection error:', error);
-    throw error;
+const connectDB = async (retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const client = await pool.connect();
+      console.log('Database connected successfully');
+      client.release();
+      return true;
+    } catch (error) {
+      console.error(`Database connection attempt ${i + 1} failed:`, error.message);
+      if (i === retries - 1) {
+        console.error('All database connection attempts failed');
+        // Don't throw error, just log it
+        return false;
+      }
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
   }
 };
 
