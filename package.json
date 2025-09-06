@@ -1,0 +1,31 @@
+{
+  "name": "zapstock",
+  "version": "1.0.0",
+  "description": "ZapStock - Inventory Management System",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "zap_stock"
+  ],
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd zap_stock && npm start",
+    "build:backend": "cd backend && npm install",
+    "build:frontend": "cd zap_stock && npm install",
+    "deploy:backend": "cd backend && ./deploy.sh",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "inventory",
+    "management",
+    "react-native",
+    "nodejs",
+    "postgresql"
+  ],
+  "author": "ZapStock Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}
