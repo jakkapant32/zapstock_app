@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 const config = require('../config');
+require('dotenv').config();
 
 const pool = new Pool({
   connectionString: config.database.url,
@@ -20,17 +21,24 @@ pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
 });
 
-const query = async (text, params) => {
+const connectDB = async () => {
   try {
-    const res = await pool.query(text, params);
-    return res;
+    const client = await pool.connect();
+    console.log('Database connected successfully');
+    client.release();
+    return true;
   } catch (error) {
-    console.error('Database query error:', error);
+    console.error('Database connection error:', error);
     throw error;
   }
 };
 
 module.exports = {
-  query,
+  query: (text, params) => {
+    console.log('EXECUTING QUERY:', text, params || '');
+    return pool.query(text, params);
+  },
+  getClient: () => pool.connect(),
+  connectDB,
   pool
 };
