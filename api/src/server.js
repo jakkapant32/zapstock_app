@@ -3,8 +3,8 @@ const cors = require('cors');
 const path = require('path');
 const config = require('../config');
 
-// Simple rate limiting
-const rateLimit = require('express-rate-limit');
+// Simple rate limiting - temporarily disabled
+// const rateLimit = require('express-rate-limit');
 
 const productRoutes = require('./routes/products');
 const categoryRoutes = require('./routes/categories');
@@ -54,21 +54,21 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate limiting middleware
-const limiter = rateLimit({
-  windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.max,
-  message: {
-    success: false,
-    error: 'Too Many Requests',
-    message: 'คุณส่งคำขอมากเกินไป กรุณาลองใหม่ในภายหลัง',
-    timestamp: new Date().toISOString()
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// Rate limiting middleware - temporarily disabled
+// const limiter = rateLimit({
+//   windowMs: config.rateLimit.windowMs,
+//   max: config.rateLimit.max,
+//   message: {
+//     success: false,
+//     error: 'Too Many Requests',
+//     message: 'คุณส่งคำขอมากเกินไป กรุณาลองใหม่ในภายหลัง',
+//     timestamp: new Date().toISOString()
+//   },
+//   standardHeaders: true,
+//   legacyHeaders: false,
+// });
 
-app.use('/api/', limiter);
+// app.use('/api/', limiter);
 
 // Request validation middleware
 app.use((req, res, next) => {
