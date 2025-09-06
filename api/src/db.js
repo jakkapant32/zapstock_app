@@ -1,70 +1,36 @@
-const { Client } = require('pg');
+const { Pool } = require('pg');
 const config = require('../config');
 
-let client = null;
-let isConnecting = false;
+const pool = new Pool({
+  connectionString: config.database.url,
+  ssl: {
+    rejectUnauthorized: false
+  },
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 20,
+  min: 0
+});
 
-const connectDB = async (retries = 3) => {
-  if (isConnecting) {
-    return client;
-  }
-  
-  isConnecting = true;
-  
-  for (let i = 0; i < retries; i++) {
-    try {
-      if (client) {
-        await client.end();
-      }
-      
-      client = new Client({
-        connectionString: config.database.url,
-        ssl: {
-          rejectUnauthorized: false
-        },
-        connectionTimeoutMillis: 10000,
-        idleTimeoutMillis: 30000,
-        query_timeout: 10000,
-        statement_timeout: 10000
-      });
-      
-      await client.connect();
-      console.log('Database connected successfully');
-      isConnecting = false;
-      return client;
-    } catch (error) {
-      console.error(`Database connection attempt ${i + 1} failed:`, error.message);
-      if (i === retries - 1) {
-        isConnecting = false;
-        throw error;
-      }
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-  }
-};
+pool.on('connect', () => {
+  console.log('New client connected to database');
+});
+
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+});
 
 const query = async (text, params) => {
   try {
-    if (!client) {
-      await connectDB();
-    }
-    const result = await client.query(text, params);
-    return result;
+    const res = await pool.query(text, params);
+    return res;
   } catch (error) {
     console.error('Database query error:', error);
-    // ลองเชื่อมต่อใหม่
-    try {
-      await connectDB();
-      const result = await client.query(text, params);
-      return result;
-    } catch (retryError) {
-      console.error('Database retry error:', retryError);
-      throw retryError;
-    }
+    throw error;
   }
 };
 
 module.exports = {
   query,
-  connectDB
+  pool
 };
