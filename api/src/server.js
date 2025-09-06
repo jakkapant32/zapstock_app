@@ -19,7 +19,19 @@ const app = express();
 const PORT = config.port;
 
 // CORS configuration (allow local dev, Android emulator, and LAN IPs)
-const allowedOrigins = config.cors.allowedOrigins;
+const allowedOrigins = config.cors?.allowedOrigins || [
+  'http://localhost:3000',
+  'http://localhost:3001', 
+  'http://localhost:8081',
+  'http://localhost:19006',
+  'http://10.0.2.2:3000',
+  'http://192.168.137.1:3000',
+  'http://192.168.137.1:3001',
+  'http://10.214.162.160:3000',
+  'http://10.214.162.160:3001',
+  'http://169.254.41.48:3000',
+  'http://169.254.13.29:3000'
+];
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -45,8 +57,8 @@ app.use(cors({
 // Handle CORS preflight requests
 app.options('*', cors());
 
-app.use(express.json({ limit: config.upload.maxSize }));
-app.use(express.urlencoded({ extended: true, limit: config.upload.maxSize }));
+app.use(express.json({ limit: config.upload?.maxSize || '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: config.upload?.maxSize || '25mb' }));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -56,8 +68,8 @@ app.use((req, res, next) => {
 
 // Rate limiting middleware - temporarily disabled
 // const limiter = rateLimit({
-//   windowMs: config.rateLimit.windowMs,
-//   max: config.rateLimit.max,
+//   windowMs: config.rateLimit?.windowMs || 15 * 60 * 1000,
+//   max: config.rateLimit?.max || 100,
 //   message: {
 //     success: false,
 //     error: 'Too Many Requests',
