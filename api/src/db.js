@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 const config = require('../config');
-require('dotenv').config();
+// require('dotenv').config(); // Temporarily disabled
 
 const pool = new Pool({
   connectionString: config.database.url,
