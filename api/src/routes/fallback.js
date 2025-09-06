@@ -38,27 +38,65 @@ router.get('/dashboard/stats', (req, res) => {
       totalCategories: 0,
       totalInventory: 0,
       totalSales: 0,
-      expiringProducts: 0
+      expiringProducts: 0,
+      totalSuppliers: 0,
+      totalTransactions: 0,
+      totalFreshProducts: 0,
+      totalFreshInventory: 0,
+      totalFreshTransactions: 0
     },
+    fallback: true
+  });
+});
+
+// Additional fallback routes
+router.get('/transactions', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Database temporarily unavailable',
+    data: [],
+    fallback: true
+  });
+});
+
+router.get('/suppliers', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Database temporarily unavailable',
+    data: [],
+    fallback: true
+  });
+});
+
+router.get('/fresh-products', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Database temporarily unavailable',
+    data: [],
     fallback: true
   });
 });
 
 // Auth fallback
 router.post('/auth/login', (req, res) => {
-  res.status(503).json({
-    success: false,
+  res.json({
+    success: true,
     message: 'Database temporarily unavailable. Please try again later.',
-    fallback: true
+    fallback: true,
+    data: {
+      user: null,
+      token: null
+    }
   });
 });
 
 // Catch-all fallback for any other routes
 router.use('*', (req, res) => {
-  res.status(503).json({
-    success: false,
+  res.json({
+    success: true,
     message: 'Database temporarily unavailable. Please try again later.',
     fallback: true,
+    data: [],
     requestedPath: req.originalUrl
   });
 });
