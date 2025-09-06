@@ -143,6 +143,26 @@ app.get('/api/test-fallback', (req, res) => {
   });
 });
 
+// Database health check endpoint
+app.get('/api/db-health', async (req, res) => {
+  try {
+    const result = await db.query('SELECT NOW() as current_time, version() as postgres_version');
+    res.json({
+      success: true,
+      database: 'connected',
+      timestamp: result.rows[0].current_time,
+      version: result.rows[0].postgres_version
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      database: 'disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Test endpoint สำหรับทดสอบการเชื่อมต่อ
 app.get('/api/test', async (req, res) => {
   try {
