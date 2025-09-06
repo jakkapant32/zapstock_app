@@ -3,28 +3,45 @@ const config = require('../config');
 
 const pool = new Pool({
   connectionString: config.database.url,
-  ssl: config.database.ssl,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-  keepAlive: true,
-  keepAliveInitialDelayMillis: 0
+  ssl: {
+    rejectUnauthorized: false,
+    require: true
+  },
+  max: 5, // ลด connection pool
+  min: 0,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 5000,
+  acquireTimeoutMillis: 60000,
+  createTimeoutMillis: 30000,
+  destroyTimeoutMillis: 5000,
+  reapIntervalMillis: 1000,
+  createRetryIntervalMillis: 200,
 });
 
 // เพิ่ม error handling
 pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
-  process.exit(-1);
+});
+
+pool.on('connect', () => {
+  console.log('New client connected to database');
+});
+
+pool.on('remove', () => {
+  console.log('Client removed from pool');
 });
 
 module.exports = {
   query: async (text, params) => {
+    const client = await pool.connect();
     try {
-      const result = await pool.query(text, params);
+      const result = await client.query(text, params);
       return result;
     } catch (error) {
       console.error('Database query error:', error);
       throw error;
+    } finally {
+      client.release();
     }
   },
   pool
