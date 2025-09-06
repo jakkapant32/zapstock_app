@@ -231,9 +231,14 @@ app.listen(PORT, '0.0.0.0', async () => {
   
   // Test database connection
   try {
-    await db.connectDB();
-    console.log('Connected to PostgreSQL database via Render.com');
+    const dbConnected = await db.connectDB();
+    if (dbConnected) {
+      console.log('Connected to PostgreSQL database via Render.com');
+    } else {
+      console.log('Database connection failed, but server will continue running');
+    }
   } catch (error) {
-    console.error('Failed to connect to database:', error);
+    console.error('Database connection error:', error.message);
+    console.log('Server will continue running without database connection');
   }
 });
