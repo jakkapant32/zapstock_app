@@ -37,8 +37,8 @@ jobs:
         
     - name: Download APK from EAS
       run: |
-        # Get the latest build URL using a different approach
-        BUILD_URL=$(eas build:list --platform=android --limit=1 --json | grep -o '"buildUrl":"[^"]*"' | cut -d'"' -f4)
+        # ใช้ URL โดยตรง
+        BUILD_URL="https://expo.dev/accounts/jakkapantum/projects/zapstock/builds/bf5f00f9-fe96-4c0c-b471-016cdeace8f8"
         echo "Build URL: $BUILD_URL"
         
         # Download the APK
