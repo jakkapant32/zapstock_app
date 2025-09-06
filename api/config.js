@@ -26,7 +26,9 @@ module.exports = {
       'http://10.214.162.160:3000',
       'http://10.214.162.160:3001',
       'http://169.254.41.48:3000',
-      'http://169.254.13.29:3000'
+      'http://169.254.13.29:3000',
+      'https://zapstock-backend.onrender.com',
+      'https://*.onrender.com'
     ]
   },
   
