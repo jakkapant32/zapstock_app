@@ -53,4 +53,14 @@ router.post('/auth/login', (req, res) => {
   });
 });
 
+// Catch-all fallback for any other routes
+router.use('*', (req, res) => {
+  res.status(503).json({
+    success: false,
+    message: 'Database temporarily unavailable. Please try again later.',
+    fallback: true,
+    requestedPath: req.originalUrl
+  });
+});
+
 module.exports = router;
