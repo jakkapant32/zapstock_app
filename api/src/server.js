@@ -99,7 +99,7 @@ app.use('/api/upload', require('./routes/uploads'));
 // Fallback routes for when database is unavailable (placed last, but with specific exclusions)
 app.use('/api', (req, res, next) => {
   // Skip fallback for specific endpoints that should handle their own errors
-  if (req.path === '/db-health' || req.path === '/health') {
+  if (req.path === '/db-health' || req.path === '/health' || req.path.startsWith('/auth/')) {
     return next();
   }
   fallbackRoutes(req, res, next);
