@@ -15,6 +15,7 @@ export default function RootLayout() {
             <StatusBar style="auto" />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="auth" />
               <Stack.Screen name="products" />
               <Stack.Screen name="categories" />

@@ -1,12 +1,14 @@
 import { Redirect } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Animated, Image, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
   const [showUpdateMessage, setShowUpdateMessage] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.8));
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     // Start animations
@@ -24,21 +26,31 @@ export default function Index() {
       }),
     ]).start();
 
-    // Simulate loading time
-    const loadingTimer = setTimeout(() => {
-      setIsLoading(false);
-    }, 3000); // Show splash for 3 seconds
-
     // Show update message after 1 second
     const updateTimer = setTimeout(() => {
       setShowUpdateMessage(true);
     }, 1000);
 
+    // Wait for auth loading to complete, then show splash for minimum 2 seconds
+    const checkAuthAndLoading = () => {
+      if (!authLoading) {
+        const remainingTime = Math.max(0, 2000 - (Date.now() - Date.now()));
+        setTimeout(() => {
+          setIsLoading(false);
+        }, remainingTime);
+      } else {
+        // If still loading auth, check again in 100ms
+        setTimeout(checkAuthAndLoading, 100);
+      }
+    };
+
+    // Start checking after 1 second minimum
+    setTimeout(checkAuthAndLoading, 1000);
+
     return () => {
-      clearTimeout(loadingTimer);
       clearTimeout(updateTimer);
     };
-  }, []);
+  }, [authLoading]);
 
   if (isLoading) {
     return (
@@ -57,7 +69,11 @@ export default function Index() {
         <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
           {/* Logo Section */}
           <Animated.View style={[styles.logoContainer, { transform: [{ scale: scaleAnim }] }]}>
-            <View style={styles.logoImage} />
+            <Image 
+              source={require('../assets/images/logo.png')} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </Animated.View>
           
           {/* App Name */}
@@ -77,8 +93,12 @@ export default function Index() {
     );
   }
 
-  // Redirect to login page after loading
-  return <Redirect href="/auth" />;
+  // Redirect based on authentication status
+  if (isAuthenticated) {
+    return <Redirect href="/(tabs)" />;
+  } else {
+    return <Redirect href="/auth" />;
+  }
 }
 
 const styles = StyleSheet.create({
