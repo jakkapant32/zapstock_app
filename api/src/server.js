@@ -3,8 +3,6 @@ const cors = require('cors');
 const path = require('path');
 const config = require('../config');
 
-// Simple rate limiting - temporarily disabled
-// const rateLimit = require('express-rate-limit');
 
 const productRoutes = require('./routes/products');
 const categoryRoutes = require('./routes/categories');
@@ -67,21 +65,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate limiting middleware - temporarily disabled
-// const limiter = rateLimit({
-//   windowMs: config.rateLimit?.windowMs || 15 * 60 * 1000,
-//   max: config.rateLimit?.max || 100,
-//   message: {
-//     success: false,
-//     error: 'Too Many Requests',
-//     message: 'คุณส่งคำขอมากเกินไป กรุณาลองใหม่ในภายหลัง',
-//     timestamp: new Date().toISOString()
-//   },
-//   standardHeaders: true,
-//   legacyHeaders: false,
-// });
-
-// app.use('/api/', limiter);
 
 // Request validation middleware
 app.use((req, res, next) => {
@@ -102,10 +85,7 @@ app.use((req, res, next) => {
 // Serve static uploads folder
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
-// Fallback routes for when database is unavailable (placed first)
-app.use('/api', fallbackRoutes);
-
-// API Routes (these will override fallback if they work)
+// API Routes (real routes first)
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/transactions', transactionRoutes);
@@ -116,9 +96,8 @@ app.use('/api/fresh-products', freshProductRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/upload', require('./routes/uploads'));
 
-// Upload routes
-const uploadRoutes = require('./routes/uploads');
-app.use('/api', uploadRoutes);
+// Fallback routes for when database is unavailable (placed last)
+app.use('/api', fallbackRoutes);
 
 
 // Security headers middleware
@@ -133,19 +112,11 @@ app.get('/', (req, res) => {
   res.send('ZapStock Backend API is running!');
 });
 
-// Test endpoint to check if fallback is working
-app.get('/api/test-fallback', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Fallback routes are working!',
-    timestamp: new Date().toISOString(),
-    database: 'fallback mode'
-  });
-});
 
 // Database health check endpoint
 app.get('/api/db-health', async (req, res) => {
   try {
+    const db = require('./db');
     const result = await db.query('SELECT NOW() as current_time, version() as postgres_version');
     res.json({
       success: true,
@@ -163,33 +134,26 @@ app.get('/api/db-health', async (req, res) => {
   }
 });
 
-// Test endpoint สำหรับทดสอบการเชื่อมต่อ
-app.get('/api/test', async (req, res) => {
-  try {
-    const db = require('./db');
-    const result = await db.query('SELECT NOW() as current_time, version() as postgres_version');
-    
-    res.json({
-      success: true,
-      message: 'เชื่อมต่อฐานข้อมูลสำเร็จ',
-      data: result.rows[0]
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'เกิดข้อผิดพลาดในการเชื่อมต่อ',
-      error: error.message
-    });
-  }
-});
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'ZapStock Backend API is healthy',
-    timestamp: new Date().toISOString()
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    const db = require('./db');
+    await db.query('SELECT 1');
+    res.json({ 
+      status: 'OK', 
+      message: 'ZapStock Backend API is healthy',
+      database: 'connected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.json({ 
+      status: 'OK', 
+      message: 'ZapStock Backend API is healthy (fallback mode)',
+      database: 'disconnected',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // 404 handler - ส่ง JSON แทน HTML
