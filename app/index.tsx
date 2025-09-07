@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Animated, Image, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Animated, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Index() {
@@ -69,11 +70,7 @@ export default function Index() {
         <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
           {/* Logo Section */}
           <Animated.View style={[styles.logoContainer, { transform: [{ scale: scaleAnim }] }]}>
-            <Image 
-              source={require('../assets/images/logo.png')} 
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
+            <Ionicons name="storefront" size={120} color="#FFFFFF" />
           </Animated.View>
           
           {/* App Name */}

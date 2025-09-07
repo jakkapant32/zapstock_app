@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    Image,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
@@ -173,11 +172,7 @@ export default function RegisterScreen() {
             {/* Brand Section */}
             <View style={styles.brandSection}>
               <View style={styles.logoContainer}>
-                <Image 
-                  source={require('../../assets/images/logo.png')} 
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                />
+                <Ionicons name="storefront" size={80} color="#FFFFFF" />
               </View>
               <Text style={styles.brandTitle}>ZapStock</Text>
               <Text style={styles.brandSubtitle}>สร้างบัญชีใหม่</Text>
