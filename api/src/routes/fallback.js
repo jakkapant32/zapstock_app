@@ -90,8 +90,18 @@ router.post('/auth/login', (req, res) => {
   });
 });
 
-// Catch-all fallback for any other routes
+// Catch-all fallback for any other routes (except specific endpoints)
 router.use('*', (req, res) => {
+  // Skip fallback for specific endpoints that should handle their own errors
+  if (req.path === '/db-health' || req.path === '/health') {
+    return res.status(404).json({
+      success: false,
+      error: 'Not Found',
+      message: `Endpoint ${req.originalUrl} ไม่พบ`,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
   res.json({
     success: true,
     message: 'Database temporarily unavailable. Please try again later.',
