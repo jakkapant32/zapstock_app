@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
-const API_BASE_URL = 'http://10.214.162.160:3000/api';
+const API_BASE_URL = 'https://zapstock-backend.onrender.com/api';
 
 interface User {
   id: string;

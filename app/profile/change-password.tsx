@@ -77,7 +77,12 @@ const ChangePassword = () => {
       console.log('🔑 Token:', token.substring(0, 20) + '...');
 
       // เรียก API เพื่อเปลี่ยนรหัสผ่าน
-      const response = await fetch('http://10.214.162.160:3000/api/auth/change-password', {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+      
+      // ใช้ endpoint ที่มีอยู่จริงตามโค้ด backend
+      console.log('🔄 Using change-password endpoint...');
+      const response = await fetch(`https://zapstock-backend.onrender.com/api/auth/change-password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -85,19 +90,41 @@ const ChangePassword = () => {
         },
         body: JSON.stringify({
           currentPassword: currentPassword.trim(),
-          newPassword: newPassword.trim(),
-          confirmPassword: confirmPassword.trim()
-        })
+          newPassword: newPassword.trim()
+        }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
 
       console.log('📡 Response status:', response.status);
-      const result = await response.json();
+      console.log('📡 Response headers:', response.headers);
+      
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        console.log('📡 Error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      let result;
+      try {
+        result = await response.json();
+      } catch (e) {
+        result = { success: false, message: 'ไม่สามารถอ่าน response ได้' };
+      }
       console.log('📡 Response result:', result);
 
-      if (response.ok && result.success) {
+      if (result.success) {
+        console.log('✅ Password changed successfully!');
+        console.log('🔑 New password:', newPassword.trim());
         Alert.alert(
           'สำเร็จ',
-          'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว',
+          'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว\n\nรหัสผ่านใหม่: ' + newPassword.trim() + '\n\nกรุณาใช้รหัสผ่านใหม่นี้ในการเข้าสู่ระบบครั้งต่อไป',
           [
             {
               text: 'ตกลง',
@@ -114,17 +141,23 @@ const ChangePassword = () => {
       } else {
         // แสดงข้อความผิดพลาดจาก API
         const errorMessage = result.message || 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน';
+        console.log('❌ Password change failed:', errorMessage);
         Alert.alert('ข้อผิดพลาด', errorMessage);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error changing password:', error);
       
-      // ตรวจสอบประเภทของ error
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        Alert.alert('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
-      } else {
-        Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน');
+      let errorMessage = 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน';
+      
+      if (error.name === 'AbortError') {
+        errorMessage = 'การเชื่อมต่อหมดเวลา กรุณาลองใหม่';
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต';
+      } else if (error.message) {
+        errorMessage = error.message;
       }
+      
+      Alert.alert('ข้อผิดพลาด', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -192,29 +225,22 @@ const ChangePassword = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#007AFF" />
       
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleCancel}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>เปลี่ยนรหัสผ่าน</Text>
-        <View style={{ width: 32 }} />
       </View>
 
       {/* Content */}
       <ScrollView 
         style={styles.content} 
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="always"
-        keyboardDismissMode="none"
-        contentInsetAdjustmentBehavior="never"
-        automaticallyAdjustKeyboardInsets={false}
-        nestedScrollEnabled={false}
-        scrollEventThrottle={16}
-        removeClippedSubviews={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        contentInsetAdjustmentBehavior="automatic"
       >
+
         {/* Security Icon */}
         <View style={styles.iconSection}>
           <View style={styles.iconContainer}>
@@ -347,23 +373,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  backButton: {
-    padding: 8,
-    marginLeft: -8,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    backgroundColor: '#007AFF',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+    marginBottom: 12,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+    textShadowColor: '#0056CC',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   content: {
     flex: 1,

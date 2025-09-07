@@ -338,27 +338,33 @@ export default function AddProduct() {
               
               {showCategoryPicker && (
                 <View style={styles.categoryPicker}>
-                  <TouchableOpacity 
-                    style={styles.categoryOption}
-                    onPress={() => {
-                      setSelectedCategory(null);
-                      setShowCategoryPicker(false);
-                    }}
+                  <ScrollView 
+                    style={styles.categoryScrollView}
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true}
                   >
-                    <Text style={styles.categoryOptionText}>ไม่ระบุ</Text>
-                  </TouchableOpacity>
-                  {(categories || []).map((category) => (
                     <TouchableOpacity 
-                      key={category.id}
                       style={styles.categoryOption}
                       onPress={() => {
-                        setSelectedCategory(category);
+                        setSelectedCategory(null);
                         setShowCategoryPicker(false);
                       }}
                     >
-                      <Text style={styles.categoryOptionText}>{category.name}</Text>
+                      <Text style={styles.categoryOptionText}>ไม่ระบุ</Text>
                     </TouchableOpacity>
-                  ))}
+                    {(categories || []).map((category) => (
+                      <TouchableOpacity 
+                        key={category.id}
+                        style={styles.categoryOption}
+                        onPress={() => {
+                          setSelectedCategory(category);
+                          setShowCategoryPicker(false);
+                        }}
+                      >
+                        <Text style={styles.categoryOptionText}>{category.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 </View>
               )}
             </View>
@@ -584,12 +590,15 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5EA',
     borderRadius: 8,
     zIndex: 1000,
-    maxHeight: 200,
+    maxHeight: 300,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  categoryScrollView: {
+    maxHeight: 300,
   },
   categoryOption: {
     paddingHorizontal: 12,

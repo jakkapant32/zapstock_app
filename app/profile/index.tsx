@@ -257,9 +257,6 @@ const Profile = () => {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: darkModeEnabled ? '#1C1C1E' : '#007AFF' }]}>
         <Text style={styles.headerTitle}>โปรไฟล์</Text>
-        <TouchableOpacity style={[styles.editButton, { backgroundColor: darkModeEnabled ? '#2C2C2E' : '#FFFFFF' }]} onPress={handleEditProfile}>
-          <Ionicons name="create-outline" size={28} color="#667eea" />
-        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -484,54 +481,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2F7',
   },
   header: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 56,
+    paddingVertical: 32,
     backgroundColor: '#007AFF',
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-    marginBottom: 20,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+    marginBottom: 6,
+    minHeight: 100,
   },
 
   headerTitle: {
     fontSize: 28,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#FFFFFF',
     textAlign: 'center',
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    letterSpacing: 1,
-    textShadowColor: '#764ba2',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-    fontFamily: 'System',
-  },
-  editButton: {
-    padding: 16,
-    marginRight: -8,
-    position: 'absolute',
-    right: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    shadowColor: '#764ba2',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    width: 56,
-    height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
+    letterSpacing: 0.3,
+    textShadowColor: '#0056CC',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   content: {
     flex: 1,
@@ -718,13 +692,10 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#667eea',
+    color: '#000000',
     marginTop: 20,
     marginBottom: 12,
     letterSpacing: 0.5,
-    textShadowColor: '#764ba2',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   modalMessage: {
     fontSize: 16,

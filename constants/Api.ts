@@ -1,9 +1,9 @@
 import { Platform } from 'react-native';
 
-// API Configuration - ใช้ IP address เดียวกันสำหรับทุก platform
+// API Configuration - ใช้ ZapStock backend
 const BASE_URL = __DEV__ 
-  ? 'http://10.214.162.160:3000'  // ใช้ IP นี้สำหรับทุก platform ใน development
-  : 'https://your-production-api.com'; // Production
+  ? 'https://zapstock-backend.onrender.com'  // ใช้ ZapStock backend
+  : 'https://zapstock-backend.onrender.com'; // Production
 
 // API Endpoints
 const API_ENDPOINTS = {

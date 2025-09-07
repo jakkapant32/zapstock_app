@@ -124,7 +124,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setError(null);
       console.log('🔄 Loading categories from API...');
-      console.log('🌐 API URL:', 'http://10.214.162.160:3000/api/categories');
+      console.log('🌐 API URL:', 'https://zapstock-backend.onrender.com/api/categories');
       
       const data = await apiService.getCategories();
       console.log('📊 Categories API Response:', data);
@@ -156,7 +156,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setError(null);
       console.log('🔄 Loading products from API...');
-      console.log('🌐 API URL:', 'http://10.214.162.160:3000/api/products');
+      console.log('🌐 API URL:', 'https://zapstock-backend.onrender.com/api/products');
       
       const data = await apiService.getProducts();
       console.log('📊 Products API Response:', data);

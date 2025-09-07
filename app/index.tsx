@@ -1,12 +1,29 @@
 import { Redirect } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
   const [showUpdateMessage, setShowUpdateMessage] = useState(false);
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [scaleAnim] = useState(new Animated.Value(0.8));
 
   useEffect(() => {
+    // Start animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     // Simulate loading time
     const loadingTimer = setTimeout(() => {
       setIsLoading(false);
@@ -37,21 +54,21 @@ export default function Index() {
         </View>
 
         {/* Main Content */}
-        <View style={styles.mainContent}>
+        <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
           {/* Logo Section */}
-          <View style={styles.logoContainer}>
+          <Animated.View style={[styles.logoContainer, { transform: [{ scale: scaleAnim }] }]}>
             <Image 
-              source={require('../assets/images/Screenshot 2025-09-03 155904.png')} 
+              source={require('../assets/icon.png')} 
               style={styles.logoImage} 
             />
-          </View>
+          </Animated.View>
           
           {/* App Name */}
-          <Text style={styles.appName}>ZapStock</Text>
+          <Animated.Text style={[styles.appName, { opacity: fadeAnim }]}>ZapStock</Animated.Text>
           
           {/* Slogan */}
-          <Text style={styles.slogan}>Fast Stock. Sure Stock. ZapStock!</Text>
-        </View>
+          <Animated.Text style={[styles.slogan, { opacity: fadeAnim }]}>Fast Stock. Sure Stock. ZapStock!</Animated.Text>
+        </Animated.View>
 
         {/* Update Message */}
         {showUpdateMessage && (
@@ -64,7 +81,7 @@ export default function Index() {
   }
 
   // Redirect to login page after loading
-  return <Redirect href="/auth/Login" />;
+  return <Redirect href="/auth" />;
 }
 
 const styles = StyleSheet.create({
@@ -105,18 +122,29 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     resizeMode: 'contain',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   appName: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '900',
     color: '#FFFFFF',
     marginBottom: 8,
+    textShadowColor: '#1E3A8A',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+    letterSpacing: 1,
   },
   slogan: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#E5E7EB',
     textAlign: 'center',
     fontStyle: 'italic',
+    fontWeight: '500',
+    letterSpacing: 0.5,
   },
   updateContainer: {
     position: 'absolute',

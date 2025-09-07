@@ -51,9 +51,23 @@ const EditProfile = () => {
     try {
       console.log('Loading profile data for user:', user.id);
       
-      const response = await fetch(`http://10.214.162.160:3000/api/profile/${user.id}`);
-      const result = await response.json();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
       
+      const response = await fetch(`https://zapstock-backend.onrender.com/api/profile/${user.id}`, {
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
       console.log('Profile API Response:', result);
       
       if (result.success && result.data) {
@@ -69,8 +83,13 @@ const EditProfile = () => {
         
         console.log('Profile data loaded:', profileData);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading profile data:', error);
+      if (error.name === 'AbortError') {
+        console.log('Profile data loading timed out');
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.log('Network error loading profile data');
+      }
     }
   };
 
@@ -116,13 +135,19 @@ const EditProfile = () => {
       console.log('User ID:', user.id);
 
       // เรียก API อัปเดตโปรไฟล์
-      const response = await fetch(`http://10.214.162.160:3000/api/profile/${user.id}`, {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+      
+      const response = await fetch(`https://zapstock-backend.onrender.com/api/profile/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(profileData),
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
 
       const result = await response.json();
       console.log('API Response:', result);
@@ -141,9 +166,20 @@ const EditProfile = () => {
       } else {
         Alert.alert('ข้อผิดพลาด', result.message || 'เกิดข้อผิดพลาดในการอัปเดตโปรไฟล์');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
-      Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
+      
+      let errorMessage = 'เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์';
+      
+      if (error.name === 'AbortError') {
+        errorMessage = 'การเชื่อมต่อหมดเวลา กรุณาลองใหม่';
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('ข้อผิดพลาด', errorMessage);
     } finally {
       setLoading(false);
     }

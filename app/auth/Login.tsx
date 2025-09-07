@@ -37,29 +37,85 @@ const Login = () => {
   };
 
   const handleLogin = async () => {
-    if (!username || !password) {
+    if (!username.trim() || !password.trim()) {
       Alert.alert('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
     }
+
+
+    proceedWithLogin();
+  };
+
+  const proceedWithLogin = async () => {
+    
     setLoading(true);
     try {
-      const response = await fetch('http://10.214.162.160:3000/api/auth/login', {
+      // ตั้งค่า timeout 10 วินาที
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      console.log('🔐 Attempting login...');
+      console.log('👤 Username:', username.trim());
+      console.log('🔑 Password:', password.trim());
+      
+      const response = await fetch('https://zapstock-backend.onrender.com/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          username: username.trim(), 
+          password: password.trim() 
+        }),
+        signal: controller.signal
       });
-      const result = await response.json();
-      if (response.ok && result.success) {
-        await login(result.token, result.user);
-        Alert.alert('สำเร็จ', 'เข้าสู่ระบบสำเร็จ!');
-        router.replace('/dashboard');
-      } else {
-        Alert.alert('ผิดพลาด', result.message || 'เข้าสู่ระบบไม่สำเร็จ');
+      
+      clearTimeout(timeoutId);
+      
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.log('📡 Error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
-    } catch {
-      Alert.alert('ผิดพลาด', 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
+      
+      const result = await response.json();
+      console.log('📡 Login result:', result);
+      
+      if (result.success && result.token) {
+        // สร้าง user data ให้ตรงกับ interface
+        const userData = {
+          id: result.user.id,
+          username: result.user.username,
+          email: result.user.email || '',
+          fullName: result.user.fullName || result.user.username,
+          role: result.user.role || 'user',
+        };
+        
+        await login(result.token, userData);
+        Alert.alert('สำเร็จ', 'เข้าสู่ระบบสำเร็จ!');
+        router.replace('/products');
+      } else {
+        throw new Error(result.message || 'เข้าสู่ระบบไม่สำเร็จ');
+      }
+    } catch (error) {
+      console.log('Login error:', error);
+      
+      let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
+      
+      if (error.name === 'AbortError') {
+        errorMessage = 'การเชื่อมต่อหมดเวลา กรุณาลองใหม่';
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'TypeError') {
+        errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
+      }
+      
+      Alert.alert('แจ้งเตือน', errorMessage);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -82,7 +138,7 @@ const Login = () => {
               <View style={styles.brandSection}>
                 <View style={styles.logoContainer}>
                   <Image
-                    source={require('../../assets/images/Screenshot 2025-09-03 155904.png')}
+                    source={require('../../assets/icon.png')}
                     style={styles.logoImage}
                     resizeMode="contain"
                   />
@@ -127,6 +183,7 @@ const Login = () => {
                 <TouchableOpacity style={styles.linkButton} onPress={() => router.push('/auth/register')}>
                   <Text style={styles.linkButtonText}>ยังไม่มีบัญชี? สมัครสมาชิก</Text>
                 </TouchableOpacity>
+
               </View>
             </View>
           </ScrollView>
