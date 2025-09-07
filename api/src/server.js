@@ -96,8 +96,14 @@ app.use('/api/fresh-products', freshProductRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/upload', require('./routes/uploads'));
 
-// Fallback routes for when database is unavailable (placed last)
-app.use('/api', fallbackRoutes);
+// Fallback routes for when database is unavailable (placed last, but with specific exclusions)
+app.use('/api', (req, res, next) => {
+  // Skip fallback for specific endpoints that should handle their own errors
+  if (req.path === '/db-health' || req.path === '/health') {
+    return next();
+  }
+  fallbackRoutes(req, res, next);
+});
 
 
 // Security headers middleware
