@@ -174,7 +174,7 @@ export default function RegisterScreen() {
             <View style={styles.brandSection}>
               <View style={styles.logoContainer}>
                 <Image
-                  source={require('../../assets/icon.png')}
+                  source={require('../../assets/images/Screenshot 2025-09-03 155904.png')}
                   style={styles.logoImage}
                   resizeMode="contain"
                 />
