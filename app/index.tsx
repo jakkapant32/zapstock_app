@@ -50,7 +50,7 @@ export default function Index() {
         
         {/* Loading Banner */}
         <View style={styles.loadingBanner}>
-          <Text style={styles.loadingText}>Loading from 10.214.162.160:8081...</Text>
+          <Text style={styles.loadingText}>Loading ZapStock...</Text>
         </View>
 
         {/* Main Content */}
