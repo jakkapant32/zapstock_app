@@ -49,19 +49,11 @@ const connectDB = async (retries = 3) => {
 
 const query = async (text, params) => {
   try {
-    console.log('EXECUTING QUERY:', text, params || '');
     const result = await pool.query(text, params);
     return result;
   } catch (error) {
     console.error('Database query error:', error.message);
-    // Return a mock result instead of throwing error
-    return {
-      rows: [],
-      rowCount: 0,
-      command: 'SELECT',
-      oid: 0,
-      fields: []
-    };
+    throw error; // Re-throw error to let routes handle it
   }
 };
 
