@@ -5,7 +5,7 @@
 module.exports = {
   // Database Configuration
   database: {
-    url: process.env.DATABASE_URL || 'postgresql://zapstock_user:jb3uWpZlFoG3f2d1PI21ZFX0frHSGrDW@dpg-d2q1vder433s73dqf0lg-a.oregon-postgres.render.com/zapstock_db',
+    url: process.env.DATABASE_URL || 'postgresql://zapstock_user:jb3uWpZlFoG3f2d1PI21ZFX0frHSGrDW@dpg-d2q1vder433s73dqf0lg-a.oregon-postgres.render.com:5432/zapstock_db?sslmode=require',
     ssl: { rejectUnauthorized: false }
   },
   
@@ -28,7 +28,8 @@ module.exports = {
       'http://169.254.41.48:3000',
       'http://169.254.13.29:3000',
       'https://zapstock-backend.onrender.com',
-      'https://*.onrender.com'
+      'https://*.onrender.com',
+      '*'
     ]
   },
   
