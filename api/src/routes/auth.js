@@ -405,4 +405,90 @@ router.get('/profile/:userId', async (req, res) => {
   }
 });
 
+// เปลี่ยนรหัสผ่าน
+router.put('/change-password', async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    // ตรวจสอบ token
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'กรุณาเข้าสู่ระบบก่อน'
+      });
+    }
+
+    // ตรวจสอบข้อมูลที่จำเป็น
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'กรุณากรอกรหัสผ่านเก่าและรหัสผ่านใหม่'
+      });
+    }
+
+    // ตรวจสอบความยาวรหัสผ่านใหม่
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร'
+      });
+    }
+
+    // ตรวจสอบ session และดึงข้อมูลผู้ใช้
+    const session = await db.query(
+      'SELECT s.user_id, u.password_hash FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token_hash = $1 AND s.is_active = true AND s.expires_at > NOW()',
+      [token]
+    );
+
+    if (session.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token หมดอายุหรือไม่ถูกต้อง'
+      });
+    }
+
+    const userId = session.rows[0].user_id;
+    const currentPasswordHash = session.rows[0].password_hash;
+
+    // ตรวจสอบรหัสผ่านเก่า
+    const isValidCurrentPassword = await bcrypt.compare(currentPassword, currentPasswordHash);
+
+    if (!isValidCurrentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'รหัสผ่านเก่าไม่ถูกต้อง'
+      });
+    }
+
+    // เข้ารหัสรหัสผ่านใหม่
+    const saltRounds = 10;
+    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    // อัปเดตรหัสผ่าน
+    await db.query(
+      'UPDATE users SET password_hash = $1 WHERE id = $2',
+      [newPasswordHash, userId]
+    );
+
+    // บันทึก activity log
+    await db.query(
+      'INSERT INTO activity_logs (user_id, action, description, table_name) VALUES ($1, $2, $3, $4)',
+      [userId, 'เปลี่ยนรหัสผ่าน', 'เปลี่ยนรหัสผ่านสำเร็จ', 'users']
+    );
+
+    res.json({
+      success: true,
+      message: 'เปลี่ยนรหัสผ่านสำเร็จ'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน'
+    });
+  }
+});
+
 module.exports = router; 
