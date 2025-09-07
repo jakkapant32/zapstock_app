@@ -57,10 +57,7 @@ export default function Index() {
         <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
           {/* Logo Section */}
           <Animated.View style={[styles.logoContainer, { transform: [{ scale: scaleAnim }] }]}>
-            <Image 
-              source={require('../assets/icon.png')} 
-              style={styles.logoImage} 
-            />
+            <View style={styles.logoImage} />
           </Animated.View>
           
           {/* App Name */}

@@ -173,11 +173,7 @@ export default function RegisterScreen() {
             {/* Brand Section */}
             <View style={styles.brandSection}>
               <View style={styles.logoContainer}>
-                <Image
-                  source={require('../../assets/icon.png')}
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                />
+                <View style={styles.logoImage} />
               </View>
               <Text style={styles.brandTitle}>ZapStock</Text>
               <Text style={styles.brandSubtitle}>สร้างบัญชีใหม่</Text>

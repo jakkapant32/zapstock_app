@@ -137,11 +137,7 @@ const Login = () => {
             <View style={styles.mainContainer}>
               <View style={styles.brandSection}>
                 <View style={styles.logoContainer}>
-                  <Image
-                    source={require('../../assets/icon.png')}
-                    style={styles.logoImage}
-                    resizeMode="contain"
-                  />
+                  <View style={styles.logoImage} />
                 </View>
                 <Text style={styles.brandTitle}>ZapStock</Text>
                 <Text style={styles.brandSubtitle}>Fast Stock. Sure Stock. ZapStock!</Text>
