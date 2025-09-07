@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 // ===== IP ADDRESSES ที่รองรับ =====
 export const API_URLS = {
   // IP หลักที่ใช้สำหรับโทรศัพท์ (ต้องอยู่ใน Wi-Fi เดียวกัน)
-  MAIN: 'http://10.214.162.160:3000',
+  MAIN: 'https://zapstock-backend.onrender.com',
   
   // IP สำรอง (กรณี IP หลักไม่ทำงาน)
   BACKUP: {
