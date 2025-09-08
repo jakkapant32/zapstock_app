@@ -28,14 +28,6 @@ export default function Index() {
       <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#1E3A8A" />
         
-        {/* Background */}
-        <View style={styles.background} />
-        
-        {/* Loading Banner */}
-        <View style={styles.loadingBanner}>
-          <Text style={styles.loadingText}>Loading from 10.214.162.160:8081...</Text>
-        </View>
-
         {/* Main Content */}
         <View style={styles.mainContent}>
           {/* App Name */}
@@ -43,12 +35,15 @@ export default function Index() {
           
           {/* Slogan */}
           <Text style={styles.slogan}>Fast Stock. Sure Stock. ZapStock!</Text>
+          
+          {/* Loading Text */}
+          <Text style={styles.loadingText}>กำลังโหลด...</Text>
         </View>
 
         {/* Update Message */}
         {showUpdateMessage && (
           <View style={styles.updateContainer}>
-            <Text style={styles.updateText}>New update available, downloading...</Text>
+            <Text style={styles.updateText}>กำลังอัปเดต...</Text>
           </View>
         )}
       </View>
@@ -64,25 +59,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1E3A8A',
   },
-  background: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#1E3A8A',
-  },
-  loadingBanner: {
-    backgroundColor: '#666666',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginTop: 50, // Add margin for status bar
-  },
-  loadingText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    textAlign: 'center',
-  },
   mainContent: {
     flex: 1,
     justifyContent: 'center',
@@ -90,16 +66,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   appName: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 8,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   slogan: {
     fontSize: 16,
     color: '#E5E7EB',
     textAlign: 'center',
     fontStyle: 'italic',
+    marginBottom: 24,
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   updateContainer: {
     position: 'absolute',
@@ -111,5 +95,6 @@ const styles = StyleSheet.create({
   updateText: {
     color: '#E5E7EB',
     fontSize: 14,
+    textAlign: 'center',
   },
 });
