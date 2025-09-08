@@ -15,6 +15,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { API_ENDPOINTS, BASE_URL } from '../../constants/ApiConfig';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const unstable_settings = { initialRouteName: 'index', headerShown: false };
@@ -36,85 +37,29 @@ const Login = () => {
   };
 
   const handleLogin = async () => {
-    if (!username.trim() || !password.trim()) {
+    if (!username || !password) {
       Alert.alert('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
     }
-
-
-    proceedWithLogin();
-  };
-
-  const proceedWithLogin = async () => {
-    
     setLoading(true);
     try {
-      // ตั้งค่า timeout 10 วินาที
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      
-      console.log('🔐 Attempting login...');
-      console.log('👤 Username:', username.trim());
-      console.log('🔑 Password:', password.trim());
-      
-      const response = await fetch('https://zapstock-backend.onrender.com/api/auth/login', {
+      const response = await fetch(`${BASE_URL}${API_ENDPOINTS.AUTH.LOGIN}`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          username: username.trim(), 
-          password: password.trim() 
-        }),
-        signal: controller.signal
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
       });
-      
-      clearTimeout(timeoutId);
-      
-      console.log('📡 Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.log('📡 Error response:', errorData);
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-      }
-      
       const result = await response.json();
-      console.log('📡 Login result:', result);
-      
-      if (result.success && result.token) {
-        // สร้าง user data ให้ตรงกับ interface
-        const userData = {
-          id: result.user.id,
-          username: result.user.username,
-          email: result.user.email || '',
-          fullName: result.user.fullName || result.user.username,
-          role: result.user.role || 'user',
-        };
-        
-        await login(result.token, userData);
+      if (response.ok && result.success) {
+        await login(result.token, result.user);
         Alert.alert('สำเร็จ', 'เข้าสู่ระบบสำเร็จ!');
-        router.replace('/products');
+        router.replace('/dashboard');
       } else {
-        throw new Error(result.message || 'เข้าสู่ระบบไม่สำเร็จ');
+        Alert.alert('ผิดพลาด', result.message || 'เข้าสู่ระบบไม่สำเร็จ');
       }
-    } catch (error) {
-      console.log('Login error:', error);
-      
-      let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
-      
-      if (error.name === 'AbortError') {
-        errorMessage = 'การเชื่อมต่อหมดเวลา กรุณาลองใหม่';
-      } else if (error.message) {
-        errorMessage = error.message;
-      } else if (error.name === 'TypeError') {
-        errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
-      }
-      
-      Alert.alert('แจ้งเตือน', errorMessage);
-    } finally {
-      setLoading(false);
+    } catch {
+      Alert.alert('ผิดพลาด', 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
     }
+    setLoading(false);
   };
 
   return (
@@ -135,9 +80,6 @@ const Login = () => {
           >
             <View style={styles.mainContainer}>
               <View style={styles.brandSection}>
-                <View style={styles.logoContainer}>
-                  <Ionicons name="storefront" size={80} color="#FFFFFF" />
-                </View>
                 <Text style={styles.brandTitle}>ZapStock</Text>
                 <Text style={styles.brandSubtitle}>Fast Stock. Sure Stock. ZapStock!</Text>
               </View>
@@ -149,7 +91,7 @@ const Login = () => {
                     <Ionicons name="person" size={20} color="#6B7280" style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
-                      placeholder="ชื่อผู้ใช้หรืออีเมล"
+                      placeholder="ชื่อผู้ใช้"
                       value={username}
                       onChangeText={setUsername}
                       autoCapitalize="none"
@@ -178,7 +120,6 @@ const Login = () => {
                 <TouchableOpacity style={styles.linkButton} onPress={() => router.push('/auth/register')}>
                   <Text style={styles.linkButtonText}>ยังไม่มีบัญชี? สมัครสมาชิก</Text>
                 </TouchableOpacity>
-
               </View>
             </View>
           </ScrollView>
@@ -242,12 +183,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  logoImage: {
-    width: 100,
-    height: 100,
+    borderWidth: 2,
+    borderColor: '#00BFFF',
+    shadowColor: '#00BFFF',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   brandTitle: {
     fontSize: 32,

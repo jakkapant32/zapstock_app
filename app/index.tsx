@@ -1,57 +1,27 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Animated, StatusBar, StyleSheet, Text, View } from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
+import { StatusBar, StyleSheet, Text, View } from 'react-native';
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
   const [showUpdateMessage, setShowUpdateMessage] = useState(false);
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const [scaleAnim] = useState(new Animated.Value(0.8));
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
-    // Start animations
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Simulate loading time
+    const loadingTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000); // Show splash for 3 seconds
 
     // Show update message after 1 second
     const updateTimer = setTimeout(() => {
       setShowUpdateMessage(true);
     }, 1000);
 
-    // Wait for auth loading to complete, then show splash for minimum 2 seconds
-    const checkAuthAndLoading = () => {
-      if (!authLoading) {
-        const remainingTime = Math.max(0, 2000 - (Date.now() - Date.now()));
-        setTimeout(() => {
-          setIsLoading(false);
-        }, remainingTime);
-      } else {
-        // If still loading auth, check again in 100ms
-        setTimeout(checkAuthAndLoading, 100);
-      }
-    };
-
-    // Start checking after 1 second minimum
-    setTimeout(checkAuthAndLoading, 1000);
-
     return () => {
+      clearTimeout(loadingTimer);
       clearTimeout(updateTimer);
     };
-  }, [authLoading]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -63,22 +33,17 @@ export default function Index() {
         
         {/* Loading Banner */}
         <View style={styles.loadingBanner}>
-          <Text style={styles.loadingText}>Loading ZapStock...</Text>
+          <Text style={styles.loadingText}>Loading from 10.214.162.160:8081...</Text>
         </View>
 
         {/* Main Content */}
-        <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
-          {/* Logo Section */}
-          <Animated.View style={[styles.logoContainer, { transform: [{ scale: scaleAnim }] }]}>
-            <Ionicons name="storefront" size={120} color="#FFFFFF" />
-          </Animated.View>
-          
+        <View style={styles.mainContent}>
           {/* App Name */}
-          <Animated.Text style={[styles.appName, { opacity: fadeAnim }]}>ZapStock</Animated.Text>
+          <Text style={styles.appName}>ZapStock</Text>
           
           {/* Slogan */}
-          <Animated.Text style={[styles.slogan, { opacity: fadeAnim }]}>Fast Stock. Sure Stock. ZapStock!</Animated.Text>
-        </Animated.View>
+          <Text style={styles.slogan}>Fast Stock. Sure Stock. ZapStock!</Text>
+        </View>
 
         {/* Update Message */}
         {showUpdateMessage && (
@@ -90,12 +55,8 @@ export default function Index() {
     );
   }
 
-  // Redirect based on authentication status
-  if (isAuthenticated) {
-    return <Redirect href="/(tabs)" />;
-  } else {
-    return <Redirect href="/auth" />;
-  }
+  // Redirect to login page after loading
+  return <Redirect href="/auth/Login" />;
 }
 
 const styles = StyleSheet.create({
@@ -128,37 +89,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
   },
-  logoContainer: {
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  logoImage: {
-    width: 120,
-    height: 120,
-    resizeMode: 'contain',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
   appName: {
-    fontSize: 32,
-    fontWeight: '900',
+    fontSize: 28,
+    fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 8,
-    textShadowColor: '#1E3A8A',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-    letterSpacing: 1,
   },
   slogan: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#E5E7EB',
     textAlign: 'center',
     fontStyle: 'italic',
-    fontWeight: '500',
-    letterSpacing: 0.5,
   },
   updateContainer: {
     position: 'absolute',

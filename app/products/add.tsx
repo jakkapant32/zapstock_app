@@ -15,6 +15,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     View,
 } from 'react-native';
 import { useData } from '../../contexts/DataContext';
@@ -337,35 +338,39 @@ export default function AddProduct() {
               </TouchableOpacity>
               
               {showCategoryPicker && (
-                <View style={styles.categoryPicker}>
-                  <ScrollView 
-                    style={styles.categoryScrollView}
-                    showsVerticalScrollIndicator={true}
-                    nestedScrollEnabled={true}
-                  >
-                    <TouchableOpacity 
-                      style={styles.categoryOption}
-                      onPress={() => {
-                        setSelectedCategory(null);
-                        setShowCategoryPicker(false);
-                      }}
-                    >
-                      <Text style={styles.categoryOptionText}>ไม่ระบุ</Text>
-                    </TouchableOpacity>
-                    {(categories || []).map((category) => (
-                      <TouchableOpacity 
-                        key={category.id}
-                        style={styles.categoryOption}
-                        onPress={() => {
-                          setSelectedCategory(category);
-                          setShowCategoryPicker(false);
-                        }}
+                <TouchableWithoutFeedback onPress={() => setShowCategoryPicker(false)}>
+                  <View style={styles.categoryPicker}>
+                    <TouchableWithoutFeedback onPress={() => {}}>
+                      <ScrollView 
+                        style={styles.categoryScrollView}
+                        showsVerticalScrollIndicator={true}
+                        nestedScrollEnabled={true}
                       >
-                        <Text style={styles.categoryOptionText}>{category.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
+                        <TouchableOpacity 
+                          style={styles.categoryOption}
+                          onPress={() => {
+                            setSelectedCategory(null);
+                            setShowCategoryPicker(false);
+                          }}
+                        >
+                          <Text style={styles.categoryOptionText}>ไม่ระบุ</Text>
+                        </TouchableOpacity>
+                        {(categories || []).map((category) => (
+                          <TouchableOpacity 
+                            key={category.id}
+                            style={styles.categoryOption}
+                            onPress={() => {
+                              setSelectedCategory(category);
+                              setShowCategoryPicker(false);
+                            }}
+                          >
+                            <Text style={styles.categoryOptionText}>{category.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </TouchableWithoutFeedback>
+                  </View>
+                </TouchableWithoutFeedback>
               )}
             </View>
 
@@ -592,13 +597,16 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     maxHeight: 300,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 5,
   },
   categoryScrollView: {
-    maxHeight: 300,
+    maxHeight: 250,
   },
   categoryOption: {
     paddingHorizontal: 12,

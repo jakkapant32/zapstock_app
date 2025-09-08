@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
@@ -15,289 +15,220 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { API_ENDPOINTS, BASE_URL } from '../../constants/ApiConfig';
 
-export default function RegisterScreen() {
+const API_URL = `${BASE_URL}${API_ENDPOINTS.AUTH.REGISTER}`;
+
+interface RegisterErrors {
+  fullName?: string;
+  username?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+}
+
+export const unstable_settings = { initialRouteName: 'index', headerShown: false };
+
+const Register = () => {
+  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [errors, setErrors] = useState<RegisterErrors>({});
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
-  
-  const [formData, setFormData] = useState({
-    fullName: '',
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const navigation = useNavigation();
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleBack = () => {
+    if (navigation.canGoBack && navigation.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/dashboard');
+    }
   };
 
-  const validateForm = () => {
-    const { fullName, username, email, password, confirmPassword } = formData;
-    
-    if (!fullName.trim()) {
-      Alert.alert('ข้อผิดพลาด', 'กรุณากรอกชื่อ-นามสกุล');
-      return false;
-    }
-    
-    if (!username.trim()) {
-      Alert.alert('ข้อผิดพลาด', 'กรุณากรอกชื่อผู้ใช้');
-      return false;
-    }
-    
-    if (username.length < 3) {
-      Alert.alert('ข้อผิดพลาด', 'ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร');
-      return false;
-    }
-    
-    if (!email.trim()) {
-      Alert.alert('ข้อผิดพลาด', 'กรุณากรอกอีเมล');
-      return false;
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert('ข้อผิดพลาด', 'รูปแบบอีเมลไม่ถูกต้อง');
-      return false;
-    }
-    
-    if (!password.trim()) {
-      Alert.alert('ข้อผิดพลาด', 'กรุณากรอกรหัสผ่าน');
-      return false;
-    }
-    
-    if (password.length < 6) {
-      Alert.alert('ข้อผิดพลาด', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
-      return false;
-    }
-    
-    if (password !== confirmPassword) {
-      Alert.alert('ข้อผิดพลาด', 'รหัสผ่านไม่ตรงกัน');
-      return false;
-    }
-    
-    return true;
+  const validate = () => {
+    const newErrors: RegisterErrors = {};
+    if (!fullName.trim()) newErrors.fullName = 'กรุณากรอกชื่อ-นามสกุล';
+    if (!username.trim()) newErrors.username = 'กรุณากรอกชื่อผู้ใช้';
+    if (!email.trim()) newErrors.email = 'กรุณากรอกอีเมล';
+    if (!password.trim()) newErrors.password = 'กรุณากรอกรหัสผ่าน';
+    if (!confirmPassword.trim()) newErrors.confirmPassword = 'กรุณายืนยันรหัสผ่าน';
+    if (password && password.length < 6) newErrors.password = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+    if (password && confirmPassword && password !== confirmPassword) newErrors.confirmPassword = 'รหัสผ่านไม่ตรงกัน';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleRegister = async () => {
-    if (!validateForm()) return;
-    
-    setIsLoading(true);
+    if (!validate()) return;
+    setLoading(true);
+    setErrors({});
     try {
-      // ตั้งค่า timeout 15 วินาที
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      
-      const response = await fetch('https://zapstock-backend.onrender.com/api/auth/register', {
+      const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fullName: formData.fullName.trim(),
-          username: formData.username.trim(),
-          email: formData.email.trim(),
-          password: formData.password.trim()
+          fullName: fullName.trim(),
+          username: username.trim(),
+          email: email.trim(),
+          password: password.trim(),
         }),
-        signal: controller.signal
       });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        Alert.alert(
-          'สำเร็จ', 
-          'สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ',
-          [
-            { text: 'ตกลง', onPress: () => router.replace('/auth/Login') }
-          ]
-        );
+      const data = await res.json();
+      if (data.success) {
+        Alert.alert('สำเร็จ', 'สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
+        setFullName('');
+        setUsername('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
       } else {
-        throw new Error(result.message || 'สมัครสมาชิกไม่สำเร็จ');
+        Alert.alert('ผิดพลาด', data.message || 'เกิดข้อผิดพลาด');
       }
-    } catch (error) {
-      console.error('Register error:', error);
-      
-      let errorMessage = 'เกิดข้อผิดพลาดในการสมัครสมาชิก';
-      
-      if (error.name === 'AbortError') {
-        errorMessage = 'การเชื่อมต่อหมดเวลา กรุณาลองใหม่';
-      } else if (error.message) {
-        errorMessage = error.message;
-      } else if (error.name === 'TypeError') {
-        errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
-      }
-      
-      Alert.alert('ข้อผิดพลาด', errorMessage);
-    } finally {
-      setIsLoading(false);
+    } catch {
+      Alert.alert('ผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
+    setLoading(false);
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1E3A8A" />
       
-      <KeyboardAvoidingView 
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+      {/* Background */}
+      <View style={styles.background}>
+        <KeyboardAvoidingView 
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <View style={styles.mainContainer}>
-            {/* Header */}
-            <View style={styles.header}>
-              <TouchableOpacity 
-                style={styles.backButton}
-                onPress={() => router.back()}
-              >
-                <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-              <View style={{ width: 24 }} />
-            </View>
-
-            {/* Brand Section */}
-            <View style={styles.brandSection}>
-              <View style={styles.logoContainer}>
-                <Ionicons name="storefront" size={80} color="#FFFFFF" />
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollViewContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.mainContainer}>
+              <View style={styles.brandSection}>
+                <Text style={styles.brandTitle}>ZapStock</Text>
               </View>
-              <Text style={styles.brandTitle}>ZapStock</Text>
-              <Text style={styles.brandSubtitle}>สร้างบัญชีใหม่</Text>
-            </View>
-            
-            {/* Form Container */}
-            <View style={styles.formContainer}>
-              <View style={styles.formBox}>
-                {/* Full Name */}
-                <View style={styles.inputContainer}>
-                  <Ionicons name="person" size={20} color="#6B7280" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="ชื่อ-นามสกุล"
-                    value={formData.fullName}
-                    onChangeText={(value) => handleInputChange('fullName', value)}
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </View>
-
-                {/* Username */}
-                <View style={styles.inputContainer}>
-                  <Ionicons name="at" size={20} color="#6B7280" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="ชื่อผู้ใช้"
-                    value={formData.username}
-                    onChangeText={(value) => handleInputChange('username', value)}
-                    autoCapitalize="none"
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </View>
-
-                {/* Email */}
-                <View style={styles.inputContainer}>
-                  <Ionicons name="mail" size={20} color="#6B7280" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="อีเมล"
-                    value={formData.email}
-                    onChangeText={(value) => handleInputChange('email', value)}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </View>
-
-                {/* Password */}
-                <View style={styles.inputContainer}>
-                  <Ionicons name="lock-closed" size={20} color="#6B7280" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="รหัสผ่าน"
-                    value={formData.password}
-                    onChangeText={(value) => handleInputChange('password', value)}
-                    secureTextEntry={!showPassword}
-                    placeholderTextColor="#9CA3AF"
-                  />
-                  <TouchableOpacity 
-                    style={styles.eyeIcon}
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    <Ionicons 
-                      name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                      size={20} 
-                      color="#6B7280" 
+              
+              <View style={styles.formContainer}>
+                <View style={styles.formBox}>
+                  <Text style={styles.formTitle}>สมัครสมาชิก</Text>
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="person" size={20} color="#6B7280" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="ชื่อ-นามสกุล"
+                      value={fullName}
+                      onChangeText={setFullName}
+                      placeholderTextColor="#9CA3AF"
                     />
+                  </View>
+                  {errors.fullName && <Text style={styles.error}>{errors.fullName}</Text>}
+                  
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="person-circle" size={20} color="#6B7280" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="ชื่อผู้ใช้"
+                      value={username}
+                      onChangeText={setUsername}
+                      autoCapitalize="none"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                  {errors.username && <Text style={styles.error}>{errors.username}</Text>}
+                  
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="mail" size={20} color="#6B7280" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="อีเมล"
+                      value={email}
+                      onChangeText={setEmail}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                  {errors.email && <Text style={styles.error}>{errors.email}</Text>}
+                  
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="lock-closed" size={20} color="#6B7280" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="รหัสผ่าน (อย่างน้อย 6 ตัว)"
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                  {errors.password && <Text style={styles.error}>{errors.password}</Text>}
+                  
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="lock-closed" size={20} color="#6B7280" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="ยืนยันรหัสผ่าน"
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                  {errors.confirmPassword && <Text style={styles.error}>{errors.confirmPassword}</Text>}
+                  
+                  <TouchableOpacity style={styles.registerButton} onPress={handleRegister} disabled={loading}>
+                    {loading ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.registerButtonText}>สมัครสมาชิก</Text>
+                    )}
                   </TouchableOpacity>
                 </View>
-
-                {/* Confirm Password */}
-                <View style={styles.inputContainer}>
-                  <Ionicons name="lock-closed" size={20} color="#6B7280" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="ยืนยันรหัสผ่าน"
-                    value={formData.confirmPassword}
-                    onChangeText={(value) => handleInputChange('confirmPassword', value)}
-                    secureTextEntry={!showConfirmPassword}
-                    placeholderTextColor="#9CA3AF"
-                  />
-                  <TouchableOpacity 
-                    style={styles.eyeIcon}
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    <Ionicons 
-                      name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
-                      size={20} 
-                      color="#6B7280" 
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Register Button */}
-                <TouchableOpacity 
-                  style={[styles.registerButton, isLoading && styles.registerButtonDisabled]} 
-                  onPress={handleRegister}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.registerButtonText}>สมัครสมาชิก</Text>
-                  )}
+                
+                <TouchableOpacity style={styles.linkButton} onPress={() => router.push('/auth/Login')}>
+                  <Text style={styles.linkButtonText}>มีบัญชีอยู่แล้ว? เข้าสู่ระบบ</Text>
                 </TouchableOpacity>
               </View>
-
-              {/* Login Link */}
-              <TouchableOpacity 
-                style={styles.linkButton} 
-                onPress={() => router.replace('/auth/Login')}
-              >
-                <Text style={styles.linkButtonText}>มีบัญชีแล้ว? เข้าสู่ระบบ</Text>
-              </TouchableOpacity>
             </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#1E3A8A',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  backButton: {
+    padding: 8,
+    marginLeft: -8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  background: {
+    flex: 1,
+    backgroundColor: '#1E3A8A',
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -307,45 +238,22 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
+    justifyContent: 'center',
   },
   mainContainer: {
     flex: 1,
-    backgroundColor: '#1E3A8A',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: 50,
-  },
-  backButton: {
-    padding: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
   },
   brandSection: {
     alignItems: 'center',
     marginBottom: 32,
-    paddingHorizontal: 24,
-  },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  logoImage: {
-    width: 60,
-    height: 60,
   },
   brandTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   brandSubtitle: {
     fontSize: 16,
@@ -353,8 +261,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   formContainer: {
-    flex: 1,
-    paddingHorizontal: 24,
+    width: '100%',
+    marginTop: -20,
   },
   formBox: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -367,6 +275,13 @@ const styles = StyleSheet.create({
     elevation: 8,
     marginBottom: 24,
   },
+  formTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1E3A8A',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -374,7 +289,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: 8,
     paddingHorizontal: 16,
   },
   inputIcon: {
@@ -386,8 +301,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#374151',
   },
-  eyeIcon: {
-    padding: 4,
+  error: {
+    color: '#EF4444',
+    fontSize: 14,
+    marginBottom: 16,
+    marginLeft: 16,
   },
   registerButton: {
     backgroundColor: '#1E3A8A',
@@ -396,9 +314,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  registerButtonDisabled: {
-    backgroundColor: '#8E8E93',
-  },
   registerButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
@@ -406,6 +321,7 @@ const styles = StyleSheet.create({
   },
   linkButton: {
     alignItems: 'center',
+    marginTop: 20,
   },
   linkButtonText: {
     color: 'rgba(255, 255, 255, 0.9)',
@@ -413,3 +329,5 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 });
+
+export default Register;

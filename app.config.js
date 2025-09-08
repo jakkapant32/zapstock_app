@@ -4,10 +4,10 @@ export default {
     slug: "zapstock",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/icon.png",
+    icon: "./assets/images/logo.png",
     userInterfaceStyle: "light",
     splash: {
-      image: "./assets/splash.png",
+      image: "./assets/images/logo.png",
       resizeMode: "contain",
       backgroundColor: "#1E3A8A"
     },
@@ -20,19 +20,22 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
+        foregroundImage: "./assets/images/logo.png",
         backgroundColor: "#1E3A8A"
       },
       package: "com.zapstock.app",
       permissions: [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
-        "ACCESS_WIFI_STATE"
+        "ACCESS_WIFI_STATE",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ],
-      usesCleartextTraffic: true
+      usesCleartextTraffic: true,
+      networkSecurityConfig: "./android/app/src/main/res/xml/network_security_config.xml"
     },
     web: {
-      favicon: "./assets/favicon.png"
+      favicon: "./assets/images/logo.png"
     },
     scheme: "zapstock",
     plugins: [

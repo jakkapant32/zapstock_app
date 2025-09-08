@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
-const API_BASE_URL = 'https://zapstock-backend.onrender.com/api';
+import { API_ENDPOINTS, BASE_URL } from '../constants/ApiConfig';
+
+const API_BASE_URL = BASE_URL + '/api';
 
 interface User {
   id: string;
@@ -22,7 +24,7 @@ interface AuthContextType {
   login: (token: string, userData: User) => Promise<void>;
   logout: () => Promise<void>;
   checkAuthStatus: () => Promise<void>;
-  register: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  register: (fullName: string, username: string, email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   updateProfile: (profileData: Partial<User>) => Promise<{ success: boolean; message?: string }>;
   uploadProfileImage: (imageBase64: string) => Promise<{ success: boolean; url?: string; message?: string }>;
 }
@@ -66,13 +68,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       console.log('🔍 Checking auth status with token...');
-      const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+      
+      // ตั้งค่า timeout สำหรับ API call
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 5000); // 5 วินาที
+      
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.VERIFY}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
 
       console.log('📡 API response status:', response.status);
       
@@ -134,8 +146,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('❌ Failed to check auth status:', error);
-      // ไม่ลบข้อมูลออกง่ายๆ เมื่อเกิด error
-      console.log('⚠️ Error occurred, but keeping existing user data');
+      
+      if (error.name === 'AbortError') {
+        console.log('⏰ API call timeout, setting loading to false');
+      } else {
+        console.log('⚠️ Error occurred, but keeping existing user data');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -156,7 +172,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const token = await getStoredToken();
       if (token) {
-        await fetch(`${API_BASE_URL}/auth/logout`, {
+        await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.LOGOUT}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -177,12 +193,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (email: string, password: string) => {
+  const register = async (fullName: string, username: string, email: string, password: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.REGISTER}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ fullName, username, email, password }),
       });
       const result = await response.json();
       if (response.ok && result.success) {
@@ -246,7 +262,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       // ส่งข้อมูลไปยัง backend
-      const response = await fetch(`${API_BASE_URL}/profile/${user.id}`, {
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.PROFILE.UPDATE}/${user.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -327,7 +343,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('📤 Request body:', requestBody);
 
       // อัปโหลดรูปภาพไปยัง backend
-      const response = await fetch(`${API_BASE_URL}/upload`, {
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.UPLOAD}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -369,6 +385,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // โหลดข้อมูลจาก AsyncStorage ก่อน
     const loadStoredUserData = async () => {
       try {
+        console.log('🔍 Loading stored user data...');
         const storedUserData = await AsyncStorage.getItem('userData');
         if (storedUserData) {
           const userData = JSON.parse(storedUserData);
@@ -379,7 +396,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (userData.id && userData.username && userData.email) {
             setUser(userData);
             console.log('✅ User data loaded from storage successfully');
-            // ไม่ต้องเรียก checkAuthStatus ถ้ามีข้อมูลใน storage แล้ว
+            setIsLoading(false); // ตั้งค่า loading เป็น false
             return;
           } else {
             console.log('⚠️ Stored data incomplete, calling API...');
@@ -395,7 +412,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
+    // ตั้งค่า timeout เพื่อป้องกันการค้าง
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ Auth loading timeout, setting loading to false');
+      setIsLoading(false);
+    }, 10000); // 10 วินาที
+
     loadStoredUserData();
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const value: AuthContextType = {

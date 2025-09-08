@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -15,7 +16,7 @@ import {
     View
 } from 'react-native';
 import QuickActionsBar from '../../components/QuickActionsBar';
-import { mockService } from '../../constants/MockDataService';
+import { API_ENDPOINTS, BASE_URL } from '../../constants/ApiConfig';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const unstable_settings = { initialRouteName: 'index', headerShown: false };
@@ -31,7 +32,7 @@ interface ProfileStats {
 const Profile = () => {
   const router = useRouter();
   const navigation = useNavigation();
-  const { user, logout, checkAuthStatus } = useAuth();
+  const { user, logout, checkAuthStatus, updateProfile, uploadProfileImage } = useAuth();
   
   // States
   const [profileStats, setProfileStats] = useState<ProfileStats>({
@@ -45,6 +46,7 @@ const Profile = () => {
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [autoBackupEnabled, setAutoBackupEnabled] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // Load profile stats
   useEffect(() => {
@@ -73,10 +75,21 @@ const Profile = () => {
 
   const loadProfileStats = async () => {
     try {
-      // เรียก Mock Service เพื่อดึงข้อมูลสถิติ
-      const stats = await mockService.getProfileStats();
-      setProfileStats(stats);
+      // เรียก API จริงเพื่อดึงข้อมูลสถิติ
+      const response = await fetch(`${BASE_URL}${API_ENDPOINTS.PROFILE.STATS}`);
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setProfileStats({
+          totalProducts: result.data.totalProducts || 0,
+          lowStockItems: result.data.lowStock || 0,
+          expiringItems: 0, // Backend ไม่มีข้อมูลนี้
+          todaySales: 0, // Backend ไม่มีข้อมูลนี้
+          monthlySales: 0, // Backend ไม่มีข้อมูลนี้
+        });
+      }
     } catch (error) {
+      console.error('Error loading profile stats:', error);
       // ใช้ข้อมูลจำลองถ้า API ไม่ทำงาน
       setProfileStats({
         totalProducts: 156,
@@ -102,6 +115,87 @@ const Profile = () => {
 
   const handleEditProfile = () => {
     router.push('/profile/edit');
+  };
+
+  const handleEditProfileImage = () => {
+    Alert.alert(
+      'เปลี่ยนรูปโปรไฟล์',
+      'เลือกวิธีการเปลี่ยนรูปโปรไฟล์',
+      [
+        { text: 'ยกเลิก', style: 'cancel' },
+        { text: 'ถ่ายรูป', onPress: () => pickImage('camera') },
+        { text: 'เลือกรูป', onPress: () => pickImage('library') },
+      ]
+    );
+  };
+
+  const pickImage = async (source: 'camera' | 'library') => {
+    try {
+      setIsUploadingImage(true);
+
+      // ขอสิทธิ์เข้าถึง
+      if (source === 'camera') {
+        const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+        if (!cameraPermission.granted) {
+          Alert.alert('แจ้งเตือน', 'ต้องการสิทธิ์เข้าถึงกล้อง');
+          return;
+        }
+      } else {
+        const libraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!libraryPermission.granted) {
+          Alert.alert('แจ้งเตือน', 'ต้องการสิทธิ์เข้าถึงแกลเลอรี่');
+          return;
+        }
+      }
+
+      // เลือกรูปภาพ
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const imageUri = result.assets[0].uri;
+        
+        // แปลงรูปเป็น base64
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        
+        reader.onloadend = async () => {
+          const base64 = reader.result as string;
+          
+          // อัปโหลดรูปภาพ
+          const uploadResult = await uploadProfileImage(base64);
+          
+          if (uploadResult.success && uploadResult.url) {
+            // อัปเดตโปรไฟล์ด้วย URL รูปภาพใหม่
+            const updateResult = await updateProfile({
+              imageUrl: uploadResult.url
+            });
+            
+            if (updateResult.success) {
+              Alert.alert('สำเร็จ', 'เปลี่ยนรูปโปรไฟล์เรียบร้อยแล้ว');
+              // รีเฟรชข้อมูลผู้ใช้
+              checkAuthStatus();
+            } else {
+              Alert.alert('ข้อผิดพลาด', updateResult.message || 'ไม่สามารถอัปเดตโปรไฟล์ได้');
+            }
+          } else {
+            Alert.alert('ข้อผิดพลาด', uploadResult.message || 'ไม่สามารถอัปโหลดรูปภาพได้');
+          }
+        };
+        
+        reader.readAsDataURL(blob);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเลือกรูปภาพ');
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   // เพิ่มฟังก์ชัน refresh ข้อมูลโปรไฟล์
@@ -257,6 +351,9 @@ const Profile = () => {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: darkModeEnabled ? '#1C1C1E' : '#007AFF' }]}>
         <Text style={styles.headerTitle}>โปรไฟล์</Text>
+        <TouchableOpacity style={[styles.editButton, { backgroundColor: darkModeEnabled ? '#2C2C2E' : '#FFFFFF' }]} onPress={handleEditProfile}>
+          <Ionicons name="create-outline" size={28} color="#667eea" />
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -264,13 +361,27 @@ const Profile = () => {
         {/* Profile Info */}
         <View style={[styles.profileBox, { backgroundColor: darkModeEnabled ? '#1C1C1E' : '#FFFFFF' }]}>
                    <View style={styles.profileAvatar}>
-           {user?.profileImage ? (
-             <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
+           {user?.profileImage || user?.imageUrl ? (
+             <Image 
+               source={{ uri: user.profileImage || user.imageUrl }} 
+               style={styles.profileImage}
+               onError={() => console.log('Error loading profile image')}
+             />
            ) : (
-             <Ionicons name="person-circle" size={80} color="#007AFF" />
+             <View style={styles.defaultAvatar}>
+               <Ionicons name="person" size={40} color="#FFFFFF" />
+             </View>
            )}
-           <TouchableOpacity style={styles.editAvatarButton}>
-             <Ionicons name="camera" size={16} color="#FFFFFF" />
+           <TouchableOpacity 
+             style={[styles.editAvatarButton, isUploadingImage && styles.editAvatarButtonDisabled]}
+             onPress={handleEditProfileImage}
+             disabled={isUploadingImage}
+           >
+             {isUploadingImage ? (
+               <Ionicons name="hourglass" size={16} color="#FFFFFF" />
+             ) : (
+               <Ionicons name="camera" size={16} color="#FFFFFF" />
+             )}
            </TouchableOpacity>
          </View>
           {user ? (
@@ -452,7 +563,7 @@ const Profile = () => {
             <Ionicons name="log-out-outline" size={48} color="#FF3B30" />
             <Text style={styles.modalTitle}>ออกจากระบบ</Text>
             <Text style={styles.modalMessage}>
-              คุณต้องการออกจากระบบหรือไม่?
+              ที่อยู่ก่อนคุณต้องการออกจากระบบใช่หรือไม่
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity 
@@ -481,31 +592,54 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2F7',
   },
   header: {
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 32,
+    paddingVertical: 56,
     backgroundColor: '#007AFF',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
     shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-    marginBottom: 6,
-    minHeight: 100,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    marginBottom: 20,
   },
 
   headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: 24,
+    fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
-    letterSpacing: 0.3,
-    textShadowColor: '#0056CC',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    letterSpacing: 1,
+    textShadowColor: '#764ba2',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+    fontFamily: 'System',
+  },
+  editButton: {
+    padding: 16,
+    marginRight: -8,
+    position: 'absolute',
+    right: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    shadowColor: '#764ba2',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    width: 56,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,
@@ -541,6 +675,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     width: 24,
     height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editAvatarButtonDisabled: {
+    backgroundColor: '#C7C7CC',
+  },
+  defaultAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -692,10 +837,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000000',
+    color: '#667eea',
     marginTop: 20,
     marginBottom: 12,
     letterSpacing: 0.5,
+    textShadowColor: '#764ba2',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   modalMessage: {
     fontSize: 16,

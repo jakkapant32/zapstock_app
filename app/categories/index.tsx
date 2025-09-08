@@ -3,7 +3,6 @@ import { useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
-    Modal,
     RefreshControl,
     SafeAreaView,
     ScrollView,
@@ -14,40 +13,57 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import CategoryModal from '../../components/CategoryModal';
 import QuickActionsBar from '../../components/QuickActionsBar';
 import { useData } from '../../contexts/DataContext';
 
+// Add type for category - ปรับให้ตรงกับ Backend API
 interface Category {
   id: string;
   name: string;
-  description?: string | null;
-  imageUrl?: string | null;
-  isActive?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  description?: string;
+  imageUrl?: string; // ตรงกับ backend ที่ส่ง "imageUrl"
+  isActive?: boolean; // ตรงกับ backend ที่ส่ง "isActive"
+  createdAt?: string; // ตรงกับ backend ที่ส่ง "createdAt"
+  updatedAt?: string; // ตรงกับ backend ที่ส่ง "updatedAt"
 }
 
-type SortOption = 'name_asc' | 'name_desc' | 'date_newest' | 'date_oldest';
+interface CategoryForm {
+  name: string;
+  description: string;
+}
 
 export const unstable_settings = { initialRouteName: 'index', headerShown: false };
 
 const Categories = () => {
   const router = useRouter();
   const navigation = useNavigation();
-  const { categories, deleteCategory, loading, error } = useData();
+  const { categories, addCategory, updateCategory, deleteCategory, loading, error } = useData();
   const [searchText, setSearchText] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [localLoading, setLocalLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [sortOption, setSortOption] = useState<SortOption>('name_asc');
-  const [showSortModal, setShowSortModal] = useState(false);
 
-  // Data is now loaded from context
+  // Categories are now loaded from context
   useEffect(() => {
     setLocalLoading(false);
-    console.log('🔄 Categories component mounted');
-    console.log('📊 Categories from context:', categories);
-    console.log('📊 Categories length:', categories?.length);
-  }, [categories]);
+    console.log('📱 Categories from context:', categories);
+    console.log('📱 Loading state:', loading);
+    console.log('📱 Error state:', error);
+    console.log('📱 Categories count:', categories?.length || 0);
+    
+    // Check if we're using fallback data
+    if (categories && categories.length > 0) {
+      const firstCategory = categories[0];
+      console.log('📱 First category:', firstCategory);
+      if (firstCategory.name === 'อาหารสด') {
+        console.log('⚠️ WARNING: Using fallback data (อาหารสด)');
+      } else {
+        console.log('✅ Using real data from API');
+      }
+    }
+  }, [categories, loading, error]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -64,17 +80,18 @@ const Categories = () => {
   };
 
   const handleAddCategory = () => {
-    router.push('/categories/add');
+    setShowAddModal(true);
   };
 
   const handleEditCategory = (category: Category) => {
-    router.push(`/categories/edit?id=${category.id}`);
+    setEditingCategory(category);
+    setShowAddModal(true);
   };
 
   const handleDeleteCategory = async (category: Category) => {
     Alert.alert(
       'ลบหมวดหมู่',
-      `ต้องการลบหมวดหมู่ "${category.name}" หรือไม่?`,
+      `ต้องการลบ "${category.name}" หรือไม่?`,
       [
         { text: 'ยกเลิก', style: 'cancel' },
         { 
@@ -82,8 +99,8 @@ const Categories = () => {
           style: 'destructive',
           onPress: async () => {
             try {
+              // Delete category using context
               await deleteCategory(category.id);
-              Alert.alert('สำเร็จ', 'ลบหมวดหมู่สำเร็จ');
             } catch (error: any) {
               Alert.alert('ข้อผิดพลาด', error.message || 'เกิดข้อผิดพลาดในการลบหมวดหมู่');
             }
@@ -93,145 +110,77 @@ const Categories = () => {
     );
   };
 
+  const handleSaveCategory = async (categoryData: { name: string; description: string }) => {
+    setLocalLoading(true);
+    try {
+      if (editingCategory) {
+        // Update existing category
+        await updateCategory(editingCategory.id, categoryData);
+      } else {
+        // Add new category
+        await addCategory(categoryData);
+      }
+      
+      setShowAddModal(false);
+      setEditingCategory(null);
+    } catch (error: any) {
+      Alert.alert('ข้อผิดพลาด', error.message || 'เกิดข้อผิดพลาดในการบันทึกหมวดหมู่');
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setEditingCategory(null);
+  };
 
   const filteredCategories = (categories || []).filter(category =>
-    category.name.toLowerCase().includes(searchText.toLowerCase())
+    (category.name?.toLowerCase() || '').includes(searchText.toLowerCase()) ||
+    (category.description?.toLowerCase() || '').includes(searchText.toLowerCase())
   );
 
-  const sortedCategories = [...filteredCategories].sort((a, b) => {
-    switch (sortOption) {
-      case 'name_asc':
-        return (a.name || '').localeCompare(b.name || '');
-      case 'name_desc':
-        return (b.name || '').localeCompare(a.name || '');
-      case 'date_newest':
-        const dateB = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateA = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateA - dateB;
-      case 'date_oldest':
-        const dateA2 = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB2 = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateA2 - dateB2;
-      default:
-        return 0;
-    }
-  });
-
-  const getSortOptionText = (option: SortOption) => {
-    switch (option) {
-      case 'name_asc': return 'ชื่อ A-Z';
-      case 'name_desc': return 'ชื่อ Z-A';
-      case 'date_newest': return 'ใหม่ล่าสุด';
-      case 'date_oldest': return 'เก่าสุด';
-      default: return 'เรียงตาม';
-    }
-  };
-
-  const CategoryCard = ({ category }: { category: Category }) => {
-    return (
-      <TouchableOpacity style={styles.categoryCard} activeOpacity={0.8}>
-        <View style={styles.categoryInfo}>
-          <View style={styles.categoryHeader}>
-            <Text style={styles.categoryName} numberOfLines={2}>{category.name || 'ไม่มีชื่อ'}</Text>
-            <View style={styles.categoryActions}>
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => handleEditCategory(category)}
-              >
-                <Ionicons name="create-outline" size={18} color="#007AFF" />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.actionButton, { marginLeft: 4 }]}
-                onPress={() => handleDeleteCategory(category)}
-              >
-                <Ionicons name="trash-outline" size={18} color="#FF3B30" />
-              </TouchableOpacity>
-            </View>
-          </View>
-          
-          {category.description && (
-            <Text style={styles.categoryDescription} numberOfLines={2}>
-              {category.description}
-            </Text>
-          )}
-          
-          <View style={styles.categoryFooter}>
-            <Text style={styles.categoryDate}>
-              สร้าง: {new Date(category.createdAt || '').toLocaleDateString('th-TH')}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-
-  const SortModal = () => (
-    <Modal
-      visible={showSortModal}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={() => setShowSortModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.sortModal}>
-          <View style={styles.sortModalHeader}>
-            <Text style={styles.sortModalTitle}>เรียงตาม</Text>
-            <TouchableOpacity onPress={() => setShowSortModal(false)}>
-              <Ionicons name="close" size={24} color="#8E8E93" />
-            </TouchableOpacity>
-          </View>
-          
-          <ScrollView style={styles.sortOptionsContainer}>
-            {[
-              { key: 'name_asc', label: 'ชื่อ A-Z', icon: 'text' },
-              { key: 'name_desc', label: 'ชื่อ Z-A', icon: 'text' },
-              { key: 'date_newest', label: 'ใหม่ล่าสุด', icon: 'time' },
-              { key: 'date_oldest', label: 'เก่าสุด', icon: 'time' },
-            ].map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                style={[
-                  styles.sortOption,
-                  sortOption === option.key && styles.sortOptionActive
-                ]}
-                onPress={() => {
-                  setSortOption(option.key as SortOption);
-                  setShowSortModal(false);
-                }}
-              >
-                <Ionicons 
-                  name={option.icon as any} 
-                  size={20} 
-                  color={sortOption === option.key ? '#007AFF' : '#8E8E93'} 
-                />
-                <Text style={[
-                  styles.sortOptionText,
-                  sortOption === option.key && styles.sortOptionTextActive
-                ]}>
-                  {option.label}
-                </Text>
-                {sortOption === option.key && (
-                  <Ionicons name="checkmark" size={20} color="#007AFF" />
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+  const CategoryCard = ({ category }: { category: Category }) => (
+    <View style={styles.categoryCard}>
+      <View style={styles.categoryInfo}>
+        <Text style={styles.categoryName} numberOfLines={2}>{category.name}</Text>
+        {category.description && (
+          <Text style={styles.categoryDescription} numberOfLines={2}>
+            {category.description}
+          </Text>
+        )}
+        <Text style={styles.categoryDate}>
+          สร้างเมื่อ: {category.createdAt ? new Date(category.createdAt).toLocaleDateString('th-TH') : 'ไม่ทราบ'}
+        </Text>
       </View>
-    </Modal>
+      
+      <View style={styles.categoryActions}>
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => handleEditCategory(category)}
+        >
+          <Ionicons name="create-outline" size={18} color="#007AFF" />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, { marginTop: 8 }]}
+          onPress={() => handleDeleteCategory(category)}
+        >
+          <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#007AFF" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>จัดการหมวดหมู่</Text>
       </View>
 
-      {/* Search and Filter */}
+      {/* Search and Add */}
       <View style={styles.searchFilterContainer}>
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#8E8E93" />
@@ -248,29 +197,29 @@ const Categories = () => {
             </TouchableOpacity>
           ) : null}
         </View>
-        <TouchableOpacity style={styles.addButtonContainer} onPress={handleAddCategory}>
+        <TouchableOpacity 
+          style={styles.addButtonContainer} 
+          onPress={handleAddCategory}
+        >
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
       {/* Categories List */}
       <ScrollView 
-        style={styles.categoriesContainer}
+        style={styles.content} 
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Results and Sort */}
-        <View style={styles.resultsContainer}>
-          <Text style={styles.resultsText}>พบ {filteredCategories.length} รายการ</Text>
-          <TouchableOpacity 
-            style={styles.sortButton}
-            onPress={() => setShowSortModal(true)}
-          >
-            <Text style={styles.sortButtonText}>{getSortOptionText(sortOption)}</Text>
-            <Ionicons name="chevron-down" size={16} color="#8E8E93" />
-          </TouchableOpacity>
+        <View style={styles.resultsHeader}>
+          <Text style={styles.resultsText}>
+            พบ {filteredCategories.length} หมวดหมู่
+          </Text>
+          <Text style={styles.debugText}>
+            Debug: {categories?.length || 0} categories loaded
+          </Text>
         </View>
 
         {loading || localLoading ? (
@@ -280,12 +229,12 @@ const Categories = () => {
         ) : (
           <>
             <View style={styles.categoriesGrid}>
-              {sortedCategories.map((category) => (
+              {filteredCategories.map((category) => (
                 <CategoryCard key={category.id} category={category} />
               ))}
             </View>
 
-            {sortedCategories.length === 0 && (
+            {filteredCategories.length === 0 && (
               <View style={styles.emptyState}>
                 <Ionicons name="folder-outline" size={64} color="#C7C7CC" />
                 <Text style={styles.emptyTitle}>ไม่พบหมวดหมู่</Text>
@@ -306,11 +255,17 @@ const Categories = () => {
       {/* Quick Actions */}
       <QuickActionsBar active="categories" />
 
-      {/* Sort Modal */}
-      <SortModal />
+      {/* Add/Edit Category Modal */}
+      <CategoryModal
+        visible={showAddModal}
+        category={editingCategory}
+        onSave={handleSaveCategory}
+        onClose={handleCloseModal}
+        loading={localLoading}
+      />
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -321,27 +276,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 32,
+    paddingVertical: 48,
     backgroundColor: '#007AFF',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
     shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-    marginBottom: 6,
-    minHeight: 100,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    marginBottom: 20,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: 24,
+    fontWeight: '900',
     color: '#FFFFFF',
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
     textShadowColor: '#0056CC',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   searchFilterContainer: {
     backgroundColor: '#FFFFFF',
@@ -365,85 +319,83 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
     marginLeft: 8,
-    marginRight: 8,
   },
   addButtonContainer: {
-    padding: 8,
-    borderRadius: 12,
-    backgroundColor: '#007AFF',
     width: 48,
     height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  categoriesContainer: {
-    flex: 1,
-  },
-  resultsContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  resultsText: {
-    fontSize: 14,
-    color: '#8E8E93',
-    fontWeight: '500',
-  },
-  sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#F2F2F7',
     borderRadius: 8,
-  },
-  sortButtonText: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '500',
-    marginRight: 4,
-  },
-  categoriesGrid: {
-    paddingHorizontal: 16,
-  },
-  categoryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  categoryInfo: {
+  content: {
     flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
-  categoryHeader: {
+  resultsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
-  categoryName: {
-    flex: 1,
+  resultsText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#000',
-    marginRight: 8,
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  categoriesGrid: {
+    gap: 12,
+  },
+  categoryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+
+  categoryInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  categoryName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  categoryDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  categoryDate: {
+    fontSize: 12,
+    color: '#8E8E93',
+    lineHeight: 16,
   },
   categoryActions: {
-    flexDirection: 'row',
+    alignItems: 'center',
   },
   actionButton: {
     padding: 8,
@@ -453,39 +405,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoryDescription: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginBottom: 8,
-  },
-  categoryFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  categoryDate: {
-    fontSize: 14,
-    color: '#8E8E93',
-    fontWeight: '500',
-  },
   emptyState: {
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingVertical: 64,
-    paddingHorizontal: 32,
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: '#000',
     marginTop: 16,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#C7C7CC',
+    color: '#666',
     textAlign: 'center',
     marginBottom: 24,
+    paddingHorizontal: 32,
   },
   addCategoryButton: {
     backgroundColor: '#007AFF',
@@ -498,64 +436,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+
   loadingContainer: {
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingVertical: 64,
   },
   loadingText: {
     fontSize: 16,
-    color: '#8E8E93',
-  },
-  // Sort Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  sortModal: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%',
-  },
-  sortModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  sortModalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
-  sortOptionsContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  sortOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
-  },
-  sortOptionActive: {
-    backgroundColor: '#F0F8FF',
-  },
-  sortOptionText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#000',
-    marginLeft: 12,
-  },
-  sortOptionTextActive: {
-    color: '#007AFF',
-    fontWeight: '600',
+    color: '#666',
+    marginTop: 16,
   },
 });
-
 export default Categories;
+

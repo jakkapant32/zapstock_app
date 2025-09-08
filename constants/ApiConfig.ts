@@ -1,8 +1,8 @@
-
+ 
 
 
 // constants/ApiConfig.ts
-// Configuration หลักสำหรับ API ที่ยืดหยุ่น
+// Configuration หลักสำหรับ API ที่ตรงกับ Backend
 
 // ตรวจสอบ platform และ environment
 import { Platform } from 'react-native';
@@ -24,35 +24,55 @@ export const API_URLS = {
 // ===== BASE_URL หลัก =====
 export const BASE_URL = API_URLS.MAIN;
 
-// ===== API ENDPOINTS =====
+// ===== API ENDPOINTS ที่ตรงกับ Backend =====
 export const API_ENDPOINTS = {
   // Health & Test
   HEALTH: '/api/health',
-  TEST: '/api/test',
+  DB_HEALTH: '/api/db-health',
   
-  // Categories
+  // Auth (ตรงกับ backend)
+  AUTH: {
+    LOGIN: '/api/auth/login',
+    REGISTER: '/api/auth/register',
+    LOGOUT: '/api/auth/logout',
+    VERIFY: '/api/auth/verify',
+    CHANGE_PASSWORD: '/api/auth/change-password',
+    PROFILE_STATS: '/api/auth/profile/stats',
+    PROFILE: '/api/auth/profile'
+  },
+  
+  // Categories (ตรงกับ backend)
   CATEGORIES: '/api/categories',
   
-  // Products
+  // Products (ตรงกับ backend)
   PRODUCTS: '/api/products',
-  PRODUCT_STATS: '/api/product-stats',
   
-  // Dashboard
-  DASHBOARD_STATS: '/api/dashboard/stats',
-  TOP_PRODUCTS: '/api/dashboard/top-products',
+  // Dashboard (ตรงกับ backend)
+  DASHBOARD: {
+    STATS: '/api/dashboard/stats',
+    OVERVIEW: '/api/dashboard/overview',
+    RECENT_TRANSACTIONS: '/api/dashboard/recent-transactions',
+    LOW_STOCK: '/api/dashboard/low-stock',
+    TOP_PRODUCTS: '/api/dashboard/top-products'
+  },
   
-  // Profile
-  PROFILE_STATS: '/api/profile/stats',
+  // Profile (ตรงกับ backend)
+  PROFILE: {
+    STATS: '/api/profile/stats',
+    UPDATE: '/api/profile'
+  },
   
-  // Transactions
+  // Transactions (ตรงกับ backend)
   TRANSACTIONS: '/api/transactions',
   
-  // Users
-  USERS: '/api/users',
-  
-  // Fresh Products
+  // Fresh Products (ตรงกับ backend)
   FRESH_PRODUCTS: '/api/fresh-products',
-  EXPIRING_PRODUCTS: '/api/expiring-products',
+  
+  // Suppliers (ตรงกับ backend)
+  SUPPLIERS: '/api/suppliers',
+  
+  // Upload (ตรงกับ backend)
+  UPLOAD: '/api/upload'
 };
 
 // ===== ฟังก์ชันสำหรับเปลี่ยน BASE_URL =====
